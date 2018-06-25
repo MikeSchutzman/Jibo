@@ -13,8 +13,8 @@ import android.widget.Toast
 import com.example.android.teammeetingjibo.R.id.*
 import com.jibo.apptoolkit.protocol.model.Command
 import kotlinx.android.synthetic.main.activity_main.*
-import java.nio.file.Files.move
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.concurrent.fixedRateTimer
 
 
@@ -28,17 +28,17 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
 
     private val coords: IntArray = intArrayOf(-1,-1,-1)
 
-    private val fixedRateTimerRandom = fixedRateTimer(name = "lookAround",
-            initialDelay = 0, period = 5000) {
-        var num = (Math.random()*4).toInt()+1
-        if (num==1)
-            onMichaelClick()
-        else if (num==2)
-            onLingClick()
-        else if (num==3)
-            onSarahClick()
-        else if (num==4)
-            onNickClick()
+    private var p1Count = 102
+    private var p2Count = 101
+    private var p3Count = 1
+    private var p4Count = 100
+    private var p1Speech : MutableList<String> = ArrayList()
+    private var p2Speech : MutableList<String> = ArrayList()
+    private var p3Speech : MutableList<String> = ArrayList()
+    private var p4Speech : MutableList<String> = ArrayList()
+    private var lookingAround = false
+    private var fixedRateTimerRandom = fixedRateTimer(name = "lookAround",
+            initialDelay = 0, period = 500000000) {
     }
 
     // Authentication
@@ -96,10 +96,10 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
         nodButton.setOnClickListener { onNodClick() }
         no.setOnClickListener { onNoClick() }
         rotate.setOnClickListener{onRotateClick()}
-        Michael.setOnClickListener{onMichaelClick()}
-        Ling.setOnClickListener{onLingClick()}
-        Sarah.setOnClickListener{onSarahClick()}
-        Nick.setOnClickListener{onNickClick()}
+        p1.setOnClickListener{onP1Click()}
+        p2.setOnClickListener{onP2Click()}
+        p3.setOnClickListener{onP3Click()}
+        p4.setOnClickListener{onP4Click()}
         stopLookingAround.setOnClickListener{onStopLookingAround()}
 
         // Start with only the Log In button enabled
@@ -110,9 +110,14 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
         interactButton.isEnabled = false
         listenButton.isEnabled = false
         moveButton.isEnabled = false
-        nodButton.isEnabled = true
+        rotate.isEnabled=false
+        nodButton.isEnabled = false
         no.isEnabled = false
-        //var vid = mCommandLibrary?.video(Command.VideoRequest.VideoType.Normal, 10, this)
+        p1.isEnabled=false
+        p2.isEnabled=false
+        p3.isEnabled=false
+        p4.isEnabled=false
+        stopLookingAround.isEnabled=false
 
 
 
@@ -171,13 +176,21 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
         JiboRemoteControl.instance.logOut()
 
         // Once we're logged out, only enable Log In button
-        loginButton?.isEnabled = true
-        logoutButton?.isEnabled = false
-        connectButton?.isEnabled = false
-        disconnectButton?.isEnabled = false
-        interactButton?.isEnabled = false
-        listenButton?.isEnabled = false
-        moveButton?.isEnabled = false
+        loginButton.isEnabled = true
+        connectButton.isEnabled = false
+        disconnectButton.isEnabled = false
+        logoutButton.isEnabled = false
+        interactButton.isEnabled = false
+        listenButton.isEnabled = false
+        moveButton.isEnabled = false
+        rotate.isEnabled=false
+        nodButton.isEnabled = false
+        no.isEnabled = false
+        p1.isEnabled=false
+        p2.isEnabled=false
+        p3.isEnabled=false
+        p4.isEnabled=false
+        stopLookingAround.isEnabled=false
 
         // Log that we've logged out to the app
         Toast.makeText(this@MainActivity, "Logged Out", Toast.LENGTH_SHORT).show()
@@ -207,12 +220,6 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
         }
     }
 
-    /*fun showImage(img: String)
-    {
-        if (mCommandLibrary != null) {
-            mCommandLibrary?.display(Command.DisplayRequest.DisplayView(), this)
-        }
-    }*/
     // Listen Button
     fun onListenClick() {
         if (mCommandLibrary != null) {
@@ -296,6 +303,7 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
             //log(vid.cancel())
         }
     }*/
+    //Display item (text, image, etc) on Jibo's screen
     fun displayItem(view: Command.DisplayRequest.DisplayView, onCommandResponseListener: CommandLibrary.OnCommandResponseListener, actionTime: Long)
     {
         val item = this
@@ -310,11 +318,12 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
                 mCommandLibrary?.display(Command.DisplayRequest.EyeView("eye"), item)
         }
     }
+    //move Jibo's face to a certain location
     fun move(target: Command.LookAtRequest.BaseLookAtTarget, onCommandResponseListener: CommandLibrary.OnCommandResponseListener )
     {
         mCommandLibrary?.lookAt(target, onCommandResponseListener)
     }
-    // Nod Button
+    // Nod Gesture
     fun nod()
     {
         if (mCommandLibrary != null) {
@@ -354,12 +363,13 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
             move(target, this)
         }
     }
+    //Jibo nods twice like a person would
     fun onNodClick() {
         nod()
         Thread.sleep(1200)
         nod()
     }
-
+    //no gesture
     fun shakeHeadNo(){
         var target = Command.LookAtRequest.AngleTarget(intArrayOf(1, 0))
         move(target, this)
@@ -383,7 +393,7 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
         }
     }
 
-
+    //testing rotate with angle
     fun onRotateClick()
     {
         if (mCommandLibrary != null) {
@@ -401,7 +411,8 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
             move(target, this)
         }
     }
-    fun onMichaelClick()
+    //look at participant 1
+    fun onP1Click()
     {
         if (mCommandLibrary != null) {
             var target = Command.LookAtRequest.PositionTarget(intArrayOf(-4,2,1))
@@ -410,7 +421,8 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
             displayItem(test,this, 4000)
         }
     }
-    fun onLingClick()
+    //look at participant 2
+    fun onP2Click()
     {
         if (mCommandLibrary != null) {
             var target = Command.LookAtRequest.PositionTarget(intArrayOf(-2,-2,1))
@@ -419,7 +431,8 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
             displayItem(test,this, 4000)
         }
     }
-    fun onSarahClick()
+    //look at participant 3
+    fun onP3Click()
     {
         if (mCommandLibrary != null) {
             var target = Command.LookAtRequest.PositionTarget(intArrayOf(2,-2,1))
@@ -428,7 +441,8 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
             displayItem(test,this, 4000)
         }
     }
-    fun onNickClick()
+    //look at participant 4
+    fun onP4Click()
     {
         if (mCommandLibrary != null) {
             var target = Command.LookAtRequest.PositionTarget(intArrayOf(3,0,1))
@@ -437,9 +451,49 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
             displayItem(test,this, 4000)
         }
     }
+    //look at a variable participant
+    fun lookAt(participant: Int)
+    {
+        log("participant: $participant")
+        var coordinates: IntArray
+        var name: String
+        if (participant==0)
+        {
+            coordinates = intArrayOf(-4,2,1)
+            name = "Michael"
+        }
+        else if (participant==1)
+        {
+            coordinates = intArrayOf(-2,-2,1)
+            name = "Ling"
+        }
+        else if (participant==2)
+        {
+            coordinates = intArrayOf(2,-2,1)
+            name = "Sarah"
+        }
+        else
+        {
+            coordinates = intArrayOf(3,0,1)
+            name = "Nick"
+        }
+        if (mCommandLibrary != null) {
+            var target = Command.LookAtRequest.PositionTarget(coordinates)
+            move(target, this)
+            var test = Command.DisplayRequest.TextView("test", "I'm looking at $name!")
+            displayItem(test,this, 4000)
+        }
+    }
+    //have Jibo stop looking around randomly at participants who haven't spoken as much
     fun onStopLookingAround()
     {
-        fixedRateTimerRandom.cancel()
+        if (lookingAround) {
+            fixedRateTimerRandom.cancel()
+        }
+        else {
+            chooseWhoToLookAt()
+        }
+        lookingAround=!lookingAround
     }
 
     /*fun onvideoClick() {
@@ -451,7 +505,154 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
         }
     }*/
 
-    // onConnectionListen overrides
+    //have Jibo look at participants, with those who have spoken the least being Jibo's primary focus
+    fun chooseWhoToLookAt()
+    {
+        var deltaX = 0
+        var deltaY = 0
+        var deltaZ = 0
+        if (positionTextX.text.toString() != "")
+            deltaX = Integer.parseInt(positionTextX.text.toString())
+        if (positionTextY.text.toString() != "")
+            deltaY = Integer.parseInt(positionTextY.text.toString())
+        if (positionTextZ.text.toString() != "")
+            deltaZ = Integer.parseInt(positionTextZ.text.toString())
+        p1Count = deltaX
+        p2Count = deltaY
+        p3Count = deltaZ
+        p4Count = 50
+        fixedRateTimerRandom = fixedRateTimer(name = "lookAround",
+                initialDelay = 0, period = 5000) {
+            val p1Prob: Double
+            val p2Prob: Double
+            val p3Prob: Double
+            val p4Prob: Double
+            var sum = p1Count.toDouble() + p2Count + p3Count + p4Count
+            if (sum ==0.0) {
+                p1Prob = 0.25
+                p2Prob = 0.25
+                p3Prob = 0.25
+                p4Prob = 0.25
+            }
+            else
+            {
+                p1Prob = Math.pow((p1Count / sum),-2.0)
+                p2Prob = Math.pow((p2Count / sum),-2.0)
+                p3Prob = Math.pow((p3Count / sum),-2.0)
+                p4Prob = Math.pow((p4Count / sum),-2.0)
+            }
+
+            val probabilities : DoubleArray = doubleArrayOf(p1Prob,p2Prob,p3Prob,p4Prob)
+            Arrays.sort(probabilities)
+            val counts : MutableList<Int> = ArrayList()
+            counts.add(p1Count)
+            counts.add(p2Count)
+            counts.add(p3Count)
+            counts.add(p4Count)
+            var low = p1Count
+            var index=0
+            for (i in counts)
+                log("Counts orig: $i")
+            for (i in counts.indices)
+                if (counts.get(i)<low) {
+                    low = counts.get(i)
+                    index = i
+                }
+            counts.removeAt(index)
+            for (i in counts)
+                log("Counts removed low: $i")
+            var medLow = counts.get(0)
+            index=0
+            for (i in counts.indices)
+                if (counts.get(i)<medLow) {
+                    medLow = counts.get(i)
+                    index = i
+                }
+            counts.removeAt(index)
+            for (i in counts)
+                log("Counts removed medLow: $i")
+            var medHigh = counts.get(0)
+            index = 0
+            if (counts.get(1)<medHigh)
+            {
+                index = 1
+                medHigh=counts.get(1)
+            }
+            counts.removeAt(index)
+            for (i in counts)
+                log("Counts removed medHigh: $i")
+            var high = counts.get(0)
+            log("Counts high: $high")
+            for (i in probabilities.indices) {
+                if (i>0)
+                    probabilities[i]+=probabilities[i-1]
+            }
+
+            var num = (Math.random()*probabilities[probabilities.lastIndex]+1)
+            var people : MutableList<Int> = ArrayList()
+            people.add(p1Count)
+            people.add(p2Count)
+            people.add(p3Count)
+            people.add(p4Count)
+            var temp : MutableList<Int> = ArrayList()
+            for (i in people.indices)
+                if(people[i] == high)
+                    temp.add(i)
+            for (i in temp)
+                log("temp: $i")
+            var highIndex = chooseRandomElement(temp)
+            temp = ArrayList()
+            for (i in people.indices)
+                if(people[i] == medHigh && i!=highIndex)
+                    temp.add(i)
+            for (i in temp)
+                log("temp: $i")
+            var medHighIndex = chooseRandomElement(temp)
+            temp = ArrayList()
+            for (i in people.indices)
+                if(people[i] == medLow && i!=highIndex && i!=medHighIndex)
+                    temp.add(i)
+            for (i in temp)
+                log("temp: $i")
+            var medLowIndex = chooseRandomElement(temp)
+            var lowIndex = 0
+            for (i in people.indices)
+                if (i!=highIndex && i!=medHighIndex && i!=medLowIndex)
+                    lowIndex = i
+            log("Random number is: $num")
+            if (num < probabilities[0]) {
+                lookAt(highIndex)
+            }
+            else if (num < probabilities[1]) {
+                lookAt(medHighIndex)
+            }
+            else if (num < probabilities[2]) {
+                lookAt(medLowIndex)
+            }
+            else{
+                lookAt(lowIndex)
+            }
+            log("prob 0 ${probabilities[0]}")
+            log("prob 1 ${probabilities[1]}")
+            log("prob 2 ${probabilities[2]}")
+            log("prob 3 ${probabilities[3]}")
+            log("low $low")
+            log("medlow $medLow")
+            log("medHigh $medHigh")
+            log("high $high")
+            log("low index $lowIndex")
+            log("medLow index $medLowIndex")
+            log("medHigh index $medHighIndex")
+            log("high index $highIndex")
+        }
+    }
+    //if multiple participants have spoken the same number of times, randomly chooses a participant to look at.
+    fun chooseRandomElement(temp : MutableList<Int>): Int
+    {
+        var random = (Math.random()*temp.size).toInt()
+        log("${temp.size} is the size!")
+        return temp.get(random)
+    }
 
     override fun onConnected() {}
 
@@ -465,7 +666,14 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
             listenButton?.isEnabled = true
             moveButton?.isEnabled = true
             nodButton?.isEnabled = true
-            no?.isEnabled = true
+            no.isEnabled = true
+            rotate.isEnabled=true
+            rotate.isEnabled=true
+            p1.isEnabled=true
+            p2.isEnabled=true
+            p3.isEnabled=true
+            p4.isEnabled=true
+            stopLookingAround.isEnabled=true
             // Log that we're connected to the app
             Toast.makeText(this@MainActivity, "Connected", Toast.LENGTH_SHORT).show()
         }
@@ -484,8 +692,21 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
     override fun onDisconnected(i: Int) {
         runOnUiThread {
             // Re-enable Connnect & Say when we're disconnected
-            connectButton?.isEnabled = true
-            interactButton?.isEnabled = false
+            loginButton.isEnabled = true
+            connectButton.isEnabled = true
+            disconnectButton.isEnabled = false
+            logoutButton.isEnabled = false
+            interactButton.isEnabled = false
+            listenButton.isEnabled = false
+            moveButton.isEnabled = false
+            rotate.isEnabled=false
+            nodButton.isEnabled = false
+            no.isEnabled = false
+            p1.isEnabled=false
+            p2.isEnabled=false
+            p3.isEnabled=false
+            p4.isEnabled=false
+            stopLookingAround.isEnabled=false
 
             // Log that we've disconnected from the app
             Toast.makeText(this@MainActivity, "Disconnected", Toast.LENGTH_SHORT).show()
