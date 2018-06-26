@@ -188,48 +188,40 @@
         app:layout_constraintTop_toBottomOf="@+id/no"/>
 
     <Button
-        android:id="@+id/Michael"
+        android:id="@+id/p1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Michael"
-        tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="16dp"
+        android:text="Paticipant 1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/nodButton"/>
+        app:layout_constraintTop_toBottomOf="@+id/nodButton" />
 
     <Button
-        android:id="@+id/Ling"
+        android:id="@+id/p2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ling"
-        tools:layout_editor_absoluteX="5dp"
-        tools:layout_editor_absoluteY="72dp"
+        android:text="Paticipant 2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/Michael"/>
+        app:layout_constraintTop_toBottomOf="@+id/p1" />
 
     <Button
-        android:id="@+id/Sarah"
+        android:id="@+id/p3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Sarah"
-        tools:layout_editor_absoluteX="5dp"
-        tools:layout_editor_absoluteY="143dp"
+        android:text="Paticipant 3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/Ling"/>
+        app:layout_constraintTop_toBottomOf="@+id/p2" />
 
     <Button
-        android:id="@+id/Nick"
+        android:id="@+id/p4"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Nick"
-        tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="212dp"
+        android:text="Paticipant 4"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/Sarah"/>
+        app:layout_constraintTop_toBottomOf="@+id/p3" />
 
     <Button
         android:id="@+id/stopLookingAround"
@@ -238,6 +230,6 @@
         android:text="Toggle Looking Around"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/Nick" />
+        app:layout_constraintTop_toBottomOf="@+id/p4" />
 
 </android.support.constraint.ConstraintLayout>
