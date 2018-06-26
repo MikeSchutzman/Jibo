@@ -20,27 +20,8 @@ import com.example.android.teammeetingjibo.R.id.*
 import com.jibo.apptoolkit.protocol.model.Command
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.concurrent.fixedRateTimer
-import android.content.Context
-import kotlinx.android.synthetic.main.activity_main.*
-import java.util.ArrayList
-
-import android.os.AsyncTask
-import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
-import android.widget.TextView
-
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
-import java.io.PrintWriter
-import java.net.Socket
-import java.net.SocketTimeoutException
-import java.util.regex.Pattern
-import java.util.regex.PatternSyntaxException
-
-import org.json.simple.JSONObject
-import org.json.simple.parser.*
 
 
 class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.OnCommandResponseListener{
@@ -65,19 +46,6 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
     private var fixedRateTimerRandom = fixedRateTimer(name = "lookAround",
             initialDelay = 0, period = 500000000) {
     }
-
-
-    private var `in`: BufferedReader? = null
-    private var out: PrintWriter? = null
-    private var ipAndPort: EditText? = null
-    private var serverAddress: String? = null
-    private var displayText: TextView? = null
-    private var text: String? = null
-    private var inputMessage: EditText? = null
-    private var msg: String? = null
-    private var connection: TextView? = null
-    private var socket: Socket? = null
-    private var obj: JSONObject? = null
 
     // Authentication
     private val onAuthenticationListener = object : JiboRemoteControl.OnAuthenticationListener {
@@ -158,16 +126,7 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
         stopLookingAround.isEnabled=false
 
 
-        ipAndPort = findViewById(R.id.ipandportInput)
-        connection = findViewById(R.id.connectionStatus)
 
-        displayText = findViewById(R.id.DisplayText)
-        inputMessage = findViewById(R.id.inputMessage)
-
-        connectToServerButton.setOnClickListener{ connectToServer() }
-        changeTextButton.setOnClickListener{ changeDisplay() }
-        sendButton.setOnClickListener{ sendMessage() }
-        speakButton.setOnClickListener{ speak() }
 
     }
         // Our connectivity functions
@@ -180,184 +139,6 @@ class MainActivity : AppCompatActivity(), OnConnectionListener, CommandLibrary.O
     // Log In
     fun onLoginClick() {
         JiboRemoteControl.instance.signIn(this, onAuthenticationListener)
-    }
-
-    // onClick for connectButton, function to create socket on IP at Port
-    @Throws(IOException::class)
-    fun connectToServer() {
-        var proper = true // was the IP and Port given in the proper format?
-        var valid = false // is the IP a valid IP?
-        var pt = ""
-        var input = ipAndPort!!.text.toString()
-        if (input.indexOf(":") == -1) {
-            connection!!.text = "Improper IP:Port format.\nPlease make sure you include the colon!"
-            proper = false
-        } else {
-            serverAddress = input.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
-            pt = input.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
-            connection!!.text = "Connecting..."
-        }
-
-        // if input IP and Port were in the proper format, check the validity of IP
-        if (proper) {
-            valid = this.validIP(serverAddress)
-        }
-
-        // error message to user
-        if (proper && !valid) {
-            connection!!.text = "Invalid IP"
-        }
-
-        // input IP was valid, attempt to establish connection
-        if (valid) {
-            var connectTask = ConnectTask()
-            connectTask.execute(serverAddress, pt)
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(ipAndPort?.windowToken, 0)
-        }
-    }
-
-    // function to check if IP is a valid IP
-    // taken from the tutoring app
-    fun validIP(ip: String?): Boolean {
-        if (ip == null) return false
-        var ip2: String = ip.toString()
-        if (ip2.isEmpty()) return false
-        ip2 = ip2.trim { it <= ' ' }
-        if ((ip2.length < 6) and (ip2.length > 15)) return false
-
-        try {
-            val pattern = Pattern.compile("^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$")
-            val matcher = pattern.matcher(ip2)
-            return matcher.matches()
-        } catch (ex: PatternSyntaxException) {
-            return false
-        }
-
-    }
-
-    /*
-        onClick for changeTextButton, function to read received message and change the display
-        expecting to receive JSONObjects
-        known issue: sometimes TextView won't wrap text properly, but the information is unaffected
-                     restarting app seems to fix this problem sometimes, not sure how to replicate
-    */
-    @Throws(IOException::class)
-    fun changeDisplay() {
-        val changeText = DisplayText()
-        changeText.execute()
-
-//        val parser = JSONParser()
-//        try {
-//            obj = parser.parse(text) as JSONObject
-//        } catch (e: Exception) {
-//            e.printStackTrace()
-//        }
-//
-//        val info = "PID: " + obj!!["pid"] + "\n" + "Transcript: " + obj!!["transcript"]
-//        displayText!!.text = info
-    }
-
-    // onClick for sendButton, function to send messages to server
-    @Throws(IOException::class)
-    fun sendMessage() {
-        msg = inputMessage!!.text.toString()
-        val txt = SendMessage()
-        txt.execute()
-    }
-
-    // onClick for speakButton, function to say what was received
-    fun speak() {
-        val speech = "Participant number " + obj!!["pid"] + "said this. " + obj!!["transcript"]
-        val nouns = "These are the nouns I heard." + obj!!["nouns"]
-        val verbs = "These are the verbs I heard." + obj!!["verbs"]
-        mCommandLibrary?.say(speech + "<break size='1'/>" + nouns + "<break size='1'/>" + verbs, this)
-    }
-
-    /*
-        Separate classes that extend AsyncTask were required for each of the functions because
-        in Android, you are not allowed to work with any kind of network connections in the main
-        thread. In this file, even the changing display and sending messages functions had to be on
-        a separate thread because changing display first required reading the received message which
-        depended on reading incoming messages from the socket, and sending messages to a socket
-        obviously relies on the network connection.
-     */
-
-    // separate class to establish socket on a separate background thread
-    inner class ConnectTask : AsyncTask<String, String, Void>() {
-
-        override fun doInBackground(vararg message: String): Void? {
-            val port = Integer.parseInt(message[1])
-            try {
-                socket = Socket(serverAddress, port)
-                connection!!.text = "Connected!"
-                Log.d("Test Client Connection", "Connection made!")
-            } catch (s: SocketTimeoutException) {
-                s.printStackTrace()
-            } catch (io: IOException) {
-                io.printStackTrace()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            // setting up the way to send and receive messages
-            try {
-                `in` = BufferedReader(
-                        InputStreamReader(socket!!.getInputStream()))
-                out = PrintWriter(socket!!.getOutputStream(), true)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            return null
-        }
-    }
-
-    // separate class to read and store incoming messages on a separate background thread
-    inner class DisplayText : AsyncTask<String, Void, Void>() {
-
-
-        override fun doInBackground(vararg message: String): Void? {
-//            try {
-//                text = `in`!!.readLine()
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            }
-
-            // keeps listening for messages
-            // to fix: doesn't wait for the say function to finish before reading and executing the
-            // next piece of transcript - ends up cutting himself off
-            // shouldn't be a problem since expected usage isn't to repeat everything people say
-            while (socket!!.isConnected) {
-                text = `in`!!.readLine()
-
-                if (text != null) {
-                    val parser = JSONParser()
-                    try {
-                        obj = parser.parse(text) as JSONObject
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-
-                    val speech = "Participant " + obj!!["pid"] + "said <break size='0.5'/>" + obj!!["transcript"]
-                    val nouns = "These are the nouns <break size='0.5'/>" + obj!!["nouns"]
-                    val verbs = "These are the verbs <break size='0.5'/>" + obj!!["verbs"]
-                    mCommandLibrary?.say(speech + "<break size='0.5'/>" + nouns + "<break size='0.5'/>" + verbs, this@MainActivity)
-                    Thread.sleep(7500)
-                }
-            }
-
-            return null
-        }
-    }
-
-    // separate class to send messages to the server
-    inner class SendMessage : AsyncTask<String, Void, Void>() {
-
-        override fun doInBackground(vararg message: String): Void? {
-            out!!.println(msg)
-            return null
-        }
     }
 
     // Connect

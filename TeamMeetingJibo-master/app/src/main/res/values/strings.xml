@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">TeamMeetingJibo</string>
+    <string name="input_ip_port">Input IP:port</string>
+    <string name="ip_port">IP:Port</string>
+    <string name="connect">Connect</string>
+    <string name="connectToServer">Connect To Server</string>
+    <string name="not_connected">Not Connected</string>
+    <string name="send_message">Send Message</string>
+    <string name="input_message">Input Message</string>
+    <string name="get_text">Get Text</string>
+    <string name="init_text">Hello!</string>
+    <string name="log_in">Log In</string>
+    <string name="interact">Interact</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="log_out">Log Out</string>
+    <string name="animate">Animate</string>
+    <string name="_0">0</string>
+    <string name="_1">1</string>
+    <string name="speak">Speak</string>
+    <string name="initialIPandPort">172.27.121.12:9090</string>
 </resources>
